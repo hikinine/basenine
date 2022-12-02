@@ -12,7 +12,29 @@ import { ExpressHttpServer } from './server.express';
 import { bind } from './utils/bind';
 
 export class ApplicationContainer {
-  constructor(private applicationModules: any[], private server: ExpressHttpServer) {}
+
+  constructor(props: {
+    applicationModules: any[],
+    server: ExpressHttpServer,
+    repositoryContext: unknown,
+    exposeEndpoints?: boolean
+  }) {
+    this.applicationModules = props.applicationModules
+    this.server = props.server
+    this.repositoryContext = props.repositoryContext
+
+    const expose = typeof props?.exposeEndpoints === "boolean"
+      ? props.exposeEndpoints
+      : true
+
+      
+    this.installApplicationModules()
+    this.installIntervals()
+    if (expose) {
+      this.installRoutes()
+    }
+    this.free()
+  }
 
   bind(dependencies: Dependencies) {
     const { key, instance, alias } = dependencies;
@@ -31,8 +53,11 @@ export class ApplicationContainer {
     }
     return null as T;
   }
-
-  public installApplicationModules() {
+  public exportContainerTo(some: any) {
+    some.container = this;
+    return this;
+  }
+  private installApplicationModules() {
     /**
      * ORDER:
      * First you should resolve every repository
@@ -69,7 +94,7 @@ export class ApplicationContainer {
   }
 
   private installRepository(repository: typeof BaseRepository, metadata: RepositoryMetadata) {
-    const context = metadata?.contextPrisma ? {} : undefined;
+    const context = metadata?.contextPrisma ? this.repositoryContext : undefined;
     const instance = repository.getInstance(context);
 
     this.bind({
@@ -150,7 +175,7 @@ export class ApplicationContainer {
     }
   }
 
-  public installIntervals() {
+  private installIntervals() {
     for (const interval of this.intervals) {
       const { id, ms, request, runAtStart } = interval;
       const $module = this.resolve(id);
@@ -160,7 +185,7 @@ export class ApplicationContainer {
     return this;
   }
 
-  public installRoutes() {
+  private installRoutes() {
     const sortRoutes = (route: Route) => (route.path.includes(':') ? 1 : -1);
     this.routes.sort(sortRoutes);
     for (const route of this.routes) {
@@ -182,12 +207,9 @@ export class ApplicationContainer {
     return this;
   }
 
-  public exportContainerTo(some: any) {
-    some.container = this;
-    return this;
-  }
 
-  public free() {
+
+  private free() {
     delete this?.applicationModules;
     delete this?.routes;
     return this;
@@ -197,6 +219,9 @@ export class ApplicationContainer {
     throw new InternalError('Mal formação no AutoImport. Não consegui resolver a dependência: ', args);
   }
 
+  private applicationModules: any[]
+  private server: ExpressHttpServer
+  private repositoryContext: unknown
   private modules = new Map<string, { instance: ApplicationContainerModules; alias?: string[] }>();
   private routes = [] as Route[];
   private intervals = [] as IntervalMetadata[];
