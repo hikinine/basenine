@@ -1,8 +1,7 @@
 import { AuthorizationException } from '../errors/AuthorizationException';
 import { BaseAuthenticationPayload } from './Authentication';
-import { DTOValidation } from './DTOValidation';
 
-export type ServiceDispatcher = { service: typeof Service<unknown, unknown>; dto: DTOValidation };
+export type ServiceDispatcher = { service: typeof Service<unknown, unknown>; dto: any };
 export type InjectableDependencies<InjectedRepositories> = {
   repository: InjectedRepositories;
 };
@@ -14,7 +13,7 @@ export class Service<InjectedRepositories, Response> {
     level: number;
   };
 
-  protected ensureAuthorityPermission(dto: DTOValidation & { me: BaseAuthenticationPayload }) {
+  protected ensureAuthorityPermission(dto: any & { me: BaseAuthenticationPayload }) {
     if (this.authorization.level > 0 && dto.me.privilege < this.authorization.level) {
       throw new AuthorizationException('Você não tem permissão para acessar esse fluxo.');
     }
@@ -29,7 +28,7 @@ export class Service<InjectedRepositories, Response> {
     this.repository = props.repository;
   }
 
-  async execute(dto: DTOValidation): Promise<Response> {
+  async execute(dto: any): Promise<Response> {
     return {} as Response;
   }
 }

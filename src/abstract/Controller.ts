@@ -1,6 +1,5 @@
 import { AuthorizationException } from '../errors/AuthorizationException';
 import { BaseAuthenticationPayload } from './Authentication';
-import { DTOValidation } from './DTOValidation';
 import { Service } from './Service';
 
 export interface ControllerProps {
@@ -24,7 +23,7 @@ export abstract class BaseController<IService extends Service<unknown, unknown> 
     level: number;
   };
 
-  public ensureAuthorityPermission(dto: DTOValidation & { me: BaseAuthenticationPayload }) {
+  public ensureAuthorityPermission(dto: any & { me: BaseAuthenticationPayload }) {
     if (this.authorization.level > 0 && dto.me.privilege < this.authorization.level) {
       throw new AuthorizationException(
         'Você não tem permissão para acessar esse fluxo. Level necessário: ' + this.authorization.level + '.',
