@@ -1,7 +1,7 @@
 {
   "name": "basenine",
   "description": "building",
-  "version": "1.0.1",
+  "version": "1.0.22",
   "main": "lib/index.js",
   "types": "lib/index.d.js",
   "license": "MIT",
