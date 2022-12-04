@@ -1,11 +1,12 @@
 import cors from 'cors';
 import express, { Express, Router } from 'express';
-
-interface InstallExpressOptions {
+import { join } from "path";
+export interface InstallExpressOptions {
   jsonLimit?: string;
   urlencoded?: boolean;
   disableCors?: boolean;
   port?: number;
+  mergeParams?: boolean
   onReady?: () => void;
 }
 
@@ -16,6 +17,7 @@ class ExpressHttpServer {
   constructor(options?: InstallExpressOptions) {
     const app = express();
 
+    app.set('views', join(__dirname, '../views'))
     app.set('view engine', 'ejs');
 
     app.use(express.json({ limit: options?.jsonLimit || '50mb' }));
@@ -27,7 +29,7 @@ class ExpressHttpServer {
 
     app.listen(options?.port || 3000, options?.onReady);
 
-    const route = Router({ mergeParams: true });
+    const route = Router({ mergeParams: typeof options.mergeParams === "boolean" ? options.mergeParams :  true });
     this.app = app;
     this.route = route;
   }

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import 'reflect-metadata';
 import { HttpException } from '../abstract/Exception';
 import { MetadataKeys } from '../constants/metadata.keys';
+import { Constructor } from '../interface/container';
 
 type Pathname = `/${string}`;
 
@@ -18,7 +19,7 @@ export type HttpInterceptorMetadata = {
   method: 'post' | 'put' | 'get' | 'delete' | 'patch';
 };
 
-type HttpMethods = { [key in HttpInterceptorMetadata['method'] as Capitalize<key>]: Pathname };
+type HttpMethods = { [key in HttpInterceptorMetadata['method']as Capitalize<key>]: Pathname };
 
 type RequireOnlyOne<T, Keys extends keyof T = keyof T> = Pick<T, Exclude<keyof T, Keys>> &
   { [K in Keys]-?: Required<Pick<T, K>> & Partial<Record<Exclude<Keys, K>, undefined>> }[Keys];
@@ -63,9 +64,7 @@ export function Controller(props: {
     statusCode = 201;
     method = 'post';
   }
-
-  return (constructor: any) => {
-    constructor.prototype.statusCode = statusCode;
+  return (constructor: Constructor)  => {
     Reflect.defineMetadata(
       MetadataKeys.Controller,
       {
@@ -80,10 +79,11 @@ export function Controller(props: {
     );
 
     const originalMethod = constructor.prototype.handle;
+    constructor.prototype.statusCode = statusCode;
     constructor.prototype.authorization = { level: props?.role || 0 };
     constructor.prototype.handle = async function (request: Request, response: Response) {
       try {
-        this.ensureAuthorityPermission({ me: request.body.me });
+        props?.role && this.ensureAuthorityPermission({ me: request.body.me });
         const result = await originalMethod.apply(this, [request, response]);
         return response.status(this?.statusCode || 200).json(result);
       } catch (error) {

@@ -1,6 +1,3 @@
-import { BaseController } from './abstract/Controller';
-import { BaseRepository } from './abstract/Repository';
-import { Service } from './abstract/Service';
 import { MetadataKeys } from './constants/metadata.keys';
 import { IntervalMetadata } from './decorators/Interval';
 import { ModuleMetadata } from './decorators/Module';
@@ -8,32 +5,33 @@ import { ProviderMetadata } from './decorators/Provider';
 import { RepositoryMetadata } from './decorators/Repository';
 import { InternalError } from './errors/InternalError';
 import { ApplicationContainerModules, Dependencies, Route } from './interface/container';
-import { ExpressHttpServer } from './server.express';
+import { ExpressHttpServer, InstallExpressOptions } from './server.express';
 import { bind } from './utils/bind';
 
 export class ApplicationContainer {
-
   constructor(props: {
     applicationModules: any[],
-    server: ExpressHttpServer,
-    repositoryContext: unknown,
-    exposeEndpoints?: boolean
+    server?: {
+      express: InstallExpressOptions,
+      developerCli?: {
+        active: boolean,
+        endpoint: string
+      }
+    },
   }) {
     this.applicationModules = props.applicationModules
-    this.server = props.server
-    this.repositoryContext = props.repositoryContext
-
-    const expose = typeof props?.exposeEndpoints === "boolean"
-      ? props.exposeEndpoints
-      : true
-
-      
-    this.installApplicationModules()
-    this.installIntervals()
-    if (expose) {
-      this.installRoutes()
+    this.installApplicationModules();
+    this.installIntervals();
+    if (props?.server) {
+      this.server = new ExpressHttpServer(props.server?.express)
+      this.installRoutes();
     }
-    this.free()
+
+    if (props?.server?.developerCli?.active) {
+      this.installDeveloperRoutes(props.server.developerCli.endpoint);
+    }
+
+    this.free();
   }
 
   bind(dependencies: Dependencies) {
@@ -71,7 +69,7 @@ export class ApplicationContainer {
       metadata.providers.forEach((provider) => {
         const repositoryMetadata: RepositoryMetadata = Reflect.getMetadata(MetadataKeys.Repository, provider);
         if (repositoryMetadata) {
-          this.installRepository(provider as typeof BaseRepository, repositoryMetadata);
+          this.installRepository(provider, repositoryMetadata);
         }
       });
 
@@ -93,9 +91,8 @@ export class ApplicationContainer {
     return this;
   }
 
-  private installRepository(repository: typeof BaseRepository, metadata: RepositoryMetadata) {
-    const context = metadata?.contextPrisma ? this.repositoryContext : undefined;
-    const instance = repository.getInstance(context);
+  private installRepository(repository: any, metadata: RepositoryMetadata) {
+    const instance = repository.getInstance();
 
     this.bind({
       instance,
@@ -105,7 +102,7 @@ export class ApplicationContainer {
   }
 
   private installService(
-    service: typeof Service<unknown, unknown>,
+    service: any,
     metadata: ProviderMetadata,
     moduleMetadata: ModuleMetadata['providers'],
   ) {
@@ -141,8 +138,8 @@ export class ApplicationContainer {
   }
 
   private installController(
-    controller: typeof BaseController,
-    $service: typeof Service<unknown, unknown>,
+    controller: any,
+    $service:  any,
     metadataKeys: string[],
   ) {
     const constructorArgs = [];
@@ -156,7 +153,7 @@ export class ApplicationContainer {
       return this.BadResolveDependency({ service });
     }
 
-    constructorArgs.push({ service });
+    constructorArgs.push(service);
     const instance = Reflect.construct(controller, constructorArgs);
 
     this.bind({
@@ -206,8 +203,13 @@ export class ApplicationContainer {
 
     return this;
   }
+  private installDeveloperRoutes(endpoint?: string) {
 
-
+    this.server.app.get(
+      endpoint || "/developer-cli",
+      (_, res) => res.render("pages/index")
+    )
+  }
 
   private free() {
     delete this?.applicationModules;
@@ -221,7 +223,6 @@ export class ApplicationContainer {
 
   private applicationModules: any[]
   private server: ExpressHttpServer
-  private repositoryContext: unknown
   private modules = new Map<string, { instance: ApplicationContainerModules; alias?: string[] }>();
   private routes = [] as Route[];
   private intervals = [] as IntervalMetadata[];

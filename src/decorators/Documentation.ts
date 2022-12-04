@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { MetadataKeys } from '../constants/metadata.keys';
+import { Constructor } from './../interface/container';
 
 export interface OpenAPIResponse {
   response: unknown;
@@ -10,7 +11,7 @@ export type DocumentationMetadata = {
   summary: string;
 };
 export function OpenAPI(props: { summary: string; description: string }) {
-  return (constructor: any) => {
+  return (constructor: Constructor) => {
     Reflect.defineMetadata(
       MetadataKeys.Documentation,
       {

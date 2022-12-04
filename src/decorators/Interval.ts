@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { MetadataKeys } from '../constants/metadata.keys';
+import { Constructor } from '../interface/container';
 
 export type IntervalMetadata = {
   id: string;
@@ -14,7 +15,7 @@ export function Interval(ms: number, props?: Pick<IntervalMetadata, 'runAtStart'
   const runAtStart = typeof props?.runAtStart === 'boolean' ? props.runAtStart : true;
 
   const request = props?.request || {};
-  return (constructor: any) => {
+  return (constructor: Constructor) => {
     Reflect.defineMetadata(
       MetadataKeys.Interval,
       {

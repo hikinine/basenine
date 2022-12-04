@@ -1,18 +1,18 @@
-import { BaseController } from '../abstract/Controller';
-import { BaseRepository } from '../abstract/Repository';
-import { Service as IService } from '../abstract/Service';
+
 import { ControllerMetadata } from '../decorators/Controller';
 
-export type Controller = { handle: (...args: any[]) => {} };
-export type Service = IService<unknown, unknown>;
+export interface IController { handle: (...args: any[]) => any };
+export interface IService{ execute: (...args: any[]) => any }
 
 export type Dependencies = {
   key: string;
   alias?: string[];
-  instance: BaseController | Service | BaseRepository;
+  instance: any
 };
-export type Route = ControllerMetadata & { controller: Controller; isReady: boolean };
+export type Route = ControllerMetadata & { controller: IController; isReady: boolean };
 export type Enumerable<T> = T | T[];
 
 export type Listeners = { eventName: string; id: string };
-export type ApplicationContainerModules = BaseController<Service> | Service | BaseRepository;
+export type ApplicationContainerModules = any
+
+export type Constructor = { new(...args: any[]): {} }
