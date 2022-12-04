@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import 'reflect-metadata';
 import { HttpException } from '../abstract/Exception';
 import { MetadataKeys } from '../constants/metadata.keys';
+import { AuthorizationException } from '../errors';
 import { Constructor } from '../interface/container';
 
 type Pathname = `/${string}`;
@@ -83,7 +84,14 @@ export function Controller(props: {
     constructor.prototype.authorization = { level: props?.role || 0 };
     constructor.prototype.handle = async function (request: Request, response: Response) {
       try {
-        props?.role && this.ensureAuthorityPermission({ me: request.body.me });
+        if (props.role) {
+          if (this.authorization.level > 0 && request.body?.me?.privilege < this.authorization.level) {
+            throw new AuthorizationException(
+              'Você não tem permissão para acessar esse fluxo. Level necessário: ' + this.authorization.level + '.',
+            );
+          }
+        }
+        
         const result = await originalMethod.apply(this, [request, response]);
         return response.status(this?.statusCode || 200).json(result);
       } catch (error) {

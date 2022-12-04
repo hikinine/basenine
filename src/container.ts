@@ -7,8 +7,10 @@ import { InternalError } from './errors/InternalError';
 import { ApplicationContainerModules, Dependencies, Route } from './interface/container';
 import { ExpressHttpServer, InstallExpressOptions } from './server.express';
 import { bind } from './utils/bind';
+import { interceptAndLogger } from './utils/intercept';
 
 export class ApplicationContainer {
+
   constructor(props: {
     applicationModules: any[],
     server?: {
@@ -22,12 +24,14 @@ export class ApplicationContainer {
     this.applicationModules = props.applicationModules
     this.installApplicationModules();
     this.installIntervals();
+
     if (props?.server) {
       this.server = new ExpressHttpServer(props.server?.express)
       this.installRoutes();
     }
 
     if (props?.server?.developerCli?.active) {
+      this.defaultMiddleware.push(interceptAndLogger)
       this.installDeveloperRoutes(props.server.developerCli.endpoint);
     }
 
@@ -126,7 +130,7 @@ export class ApplicationContainer {
       repository[shortId] = resolvedDependency;
     }
 
-    constructorArgs.push({ repository });
+    constructorArgs.push(repository);
     const instance = Reflect.construct(service, constructorArgs);
     const instanceExists = this.resolve(instance.constructor.name);
     if (!instanceExists) {
@@ -139,7 +143,7 @@ export class ApplicationContainer {
 
   private installController(
     controller: any,
-    $service:  any,
+    $service: any,
     metadataKeys: string[],
   ) {
     const constructorArgs = [];
@@ -194,7 +198,7 @@ export class ApplicationContainer {
       Object.defineProperty(handler, 'name', { value: controller.constructor.name });
 
       if (!route.isReady) {
-        this.server.route[method](path, ...middlewares, handler);
+        this.server.route[method](path, ...this.defaultMiddleware, ...middlewares, handler);
         route.isReady = true;
       }
     }
@@ -222,6 +226,7 @@ export class ApplicationContainer {
   }
 
   private applicationModules: any[]
+  private defaultMiddleware = []
   private server: ExpressHttpServer
   private modules = new Map<string, { instance: ApplicationContainerModules; alias?: string[] }>();
   private routes = [] as Route[];

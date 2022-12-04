@@ -5,8 +5,8 @@ import { Constructor, IController, IService } from './../interface/container';
 export type ModuleMetadata = {
   providers: any[];
   exports: [
-    IController,
-    IService
+     IController,
+     IService
   ][];
 };
 export function Module(props: ModuleMetadata) {

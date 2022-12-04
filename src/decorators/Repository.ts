@@ -1,6 +1,5 @@
 import 'reflect-metadata';
 import { MetadataKeys } from '../constants/metadata.keys';
-import { Constructor } from './../interface/container';
 
 export type RepositoryMetadata = {
   id: string;
@@ -18,7 +17,7 @@ export function formatRepository(key: string) {
 }
 
 export function Repository(props: { contextPrisma?: boolean; interface: string }) {
-  return (constructor: Constructor) => {
+  return (constructor: any) => {
     Reflect.defineMetadata(
       MetadataKeys.Repository,
       {

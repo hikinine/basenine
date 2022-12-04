@@ -1,5 +1,4 @@
-import { IController } from '../interface/container';
 
-export function bind(controller: IController) {
+export function bind(controller: any) {
   return controller.handle.bind(controller);
 }
