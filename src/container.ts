@@ -1,5 +1,7 @@
+
 import { MetadataKeys } from './constants/metadata.keys';
 import { IntervalMetadata } from './decorators/Interval';
+import { ListenerMetadata } from './decorators/Listener';
 import { ModuleMetadata } from './decorators/Module';
 import { ProviderMetadata } from './decorators/Provider';
 import { RepositoryMetadata } from './decorators/Repository';
@@ -10,33 +12,6 @@ import { bind } from './utils/bind';
 import { interceptAndLogger } from './utils/intercept';
 
 export class ApplicationContainer {
-
-  constructor(props: {
-    applicationModules: any[],
-    server?: {
-      express: InstallExpressOptions,
-      developerCli?: {
-        active: boolean,
-        endpoint: string
-      }
-    },
-  }) {
-    this.applicationModules = props.applicationModules
-    this.installApplicationModules();
-    this.installIntervals();
-
-    if (props?.server) {
-      this.server = new ExpressHttpServer(props.server?.express)
-      this.installRoutes();
-    }
-
-    if (props?.server?.developerCli?.active) {
-      this.defaultMiddleware.push(interceptAndLogger)
-      this.installDeveloperRoutes(props.server.developerCli.endpoint);
-    }
-
-    this.free();
-  }
 
   bind(dependencies: Dependencies) {
     const { key, instance, alias } = dependencies;
@@ -77,15 +52,13 @@ export class ApplicationContainer {
         }
       });
 
-      metadata.exports.forEach(([$, $service]) => {
-        const serviceMetadata: ProviderMetadata = Reflect.getMetadata(MetadataKeys.Provider, $service);
+      metadata.exports.forEach(([$controller, $service]) => {
 
+        const serviceMetadata: ProviderMetadata = Reflect.getMetadata(MetadataKeys.Provider, $service);
         if (serviceMetadata) {
           this.installService($service, serviceMetadata, metadata.providers);
         }
-      });
 
-      metadata.exports.forEach(([$controller, $service]) => {
         const metadataKeys = Reflect.getMetadataKeys($controller);
         if (metadataKeys.length && metadataKeys.some((key) => this.allowedControllerKeys.includes(key))) {
           this.installController($controller, $service, metadataKeys);
@@ -159,12 +132,7 @@ export class ApplicationContainer {
 
     constructorArgs.push(service);
     const instance = Reflect.construct(controller, constructorArgs);
-
-    this.bind({
-      instance,
-      key: instance.constructor.name,
-      alias: [],
-    });
+    const alias = []
 
     if (metadataKeys.includes(MetadataKeys.Controller)) {
       const metadata = Reflect.getMetadata(MetadataKeys.Controller, controller);
@@ -174,6 +142,17 @@ export class ApplicationContainer {
       const metadata = Reflect.getMetadata(MetadataKeys.Interval, controller);
       this.intervals.push(metadata);
     }
+    if (metadataKeys.includes(MetadataKeys.Events)) {
+      const metadata: ListenerMetadata = Reflect.getMetadata(MetadataKeys.Events, controller);
+      metadata.alias.forEach(eventAlias => alias.push(eventAlias))
+      alias.push(metadata.eventName)
+    }
+    
+    this.bind({
+      instance,
+      key: instance.constructor.name,
+      alias,
+    });
   }
 
   private installIntervals() {
@@ -224,6 +203,34 @@ export class ApplicationContainer {
   private BadResolveDependency(args: any) {
     throw new InternalError('Mal formação no AutoImport. Não consegui resolver a dependência: ', args);
   }
+
+  constructor(props: {
+    applicationModules: any[],
+    server?: {
+      express: InstallExpressOptions,
+      developerCli?: {
+        active: boolean,
+        endpoint: string
+      }
+    },
+  }) {
+    this.applicationModules = props.applicationModules
+    this.installApplicationModules();
+    this.installIntervals();
+
+    if (props?.server) {
+      this.server = new ExpressHttpServer(props.server?.express)
+      this.installRoutes();
+    }
+
+    if (props?.server?.developerCli?.active) {
+      this.defaultMiddleware.push(interceptAndLogger)
+      this.installDeveloperRoutes(props.server.developerCli.endpoint);
+    }
+
+    this.free();
+  }
+
 
   private applicationModules: any[]
   private defaultMiddleware = []

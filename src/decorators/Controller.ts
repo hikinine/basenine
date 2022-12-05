@@ -37,9 +37,9 @@ export function Controller(props: {
     if (result instanceof HttpException) {
       response.status(result?.code || 400).json(result);
     } else if (result instanceof Error) {
-      response.status(500).json(result.message);
+      response.status(500).json(result?.message);
     } else {
-      response.status(500).json(result.message);
+      response.status(500).json(result?.message);
     }
   }
 
@@ -65,7 +65,7 @@ export function Controller(props: {
     statusCode = 201;
     method = 'post';
   }
-  return (constructor: Constructor)  => {
+  return (constructor: Constructor) => {
     Reflect.defineMetadata(
       MetadataKeys.Controller,
       {
@@ -91,7 +91,7 @@ export function Controller(props: {
             );
           }
         }
-        
+
         const result = await originalMethod.apply(this, [request, response]);
         return response.status(this?.statusCode || 200).json(result);
       } catch (error) {

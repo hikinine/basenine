@@ -13,11 +13,7 @@
           <h1 class="text-center my-5">Criando novo usecase</h1>
           <div class="mb-3">
             <label class="mb-1"> Nome do usecase </label>
-            <input
-              id="usecase"
-              class="form-control"
-              placeholder="Exemplo: UserRecoveryPassword"
-            />
+            <input id="usecase" class="form-control" placeholder="Exemplo: UserRecoveryPassword" />
           </div>
           <div class="mb-3" id="select-repositories-container">
             <label class="mb-1">Lista de repositórios</label>
@@ -25,11 +21,7 @@
 
           <div class="mb-3">
             <label class="mb-1">Selecionar em qual pasta salvar</label>
-            <select
-              class="form-control"
-              placeholder="Nenhum valor selecionado"
-              id="select-dir"
-            ></select>
+            <select class="form-control" placeholder="Nenhum valor selecionado" id="select-dir"></select>
           </div>
 
           <div class="mb-3">
@@ -66,12 +58,7 @@
               </div>
               <div class="col-6">
                 <label class="mb-1"> Default middleware </label>
-                <input
-                  readonly
-                  class="form-control"
-                  placeholder="Nenhum middleware default"
-                  id="default-middleware"
-                />
+                <input readonly class="form-control" placeholder="Nenhum middleware default" id="default-middleware" />
               </div>
             </div>
           </div>
@@ -82,9 +69,7 @@
           </div>
 
           <div class="mb-3">
-            <button id="submit" class="btn btn-info btn-sm w-100">
-              Criar usecase
-            </button>
+            <button id="submit" class="btn btn-info btn-sm w-100">Criar usecase</button>
           </div>
         </div>
 
@@ -92,24 +77,14 @@
           <h1 class="text-center my-5">Criando novo repositorio</h1>
           <div class="mb-3">
             <label class="mb-1"> Nome do repositório </label>
-            <input
-              id="repository-name"
-              class="form-control"
-              placeholder="Exemplo: UserRepository"
-            />
+            <input id="repository-name" class="form-control" placeholder="Exemplo: UserRepository" />
           </div>
           <div class="mb-3">
             <label class="mb-1"> Implementação </label>
-            <input
-              id="repository-implementation"
-              class="form-control"
-              placeholder="Exemplo: Prisma, Sdk"
-            />
+            <input id="repository-implementation" class="form-control" placeholder="Exemplo: Prisma, Sdk" />
           </div>
           <div class="mb-3">
-            <button id="submit-repo" class="btn btn-info btn-sm w-100">
-              Criar repositório
-            </button>
+            <button id="submit-repo" class="btn btn-info btn-sm w-100">Criar repositório</button>
           </div>
         </div>
       </div>
@@ -119,7 +94,7 @@
       class DeveloperCli {
         constructor() {
           this.render = new Render();
-          this.basePath = "/developer-cli/api";
+          this.basePath = '/v1/developer-cli/api';
           this.repositories = [];
           this.modules = [];
           this.middlewares = [];
@@ -127,18 +102,15 @@
         }
         async handleSubmitRepo() {
           const payload = {
-            name: $("#repository-name").val(),
-            implementation: $("#repository-implementation").val()
+            name: $('#repository-name').val(),
+            implementation: $('#repository-implementation').val(),
           };
-          const response = await axios.post(
-            this.basePath + "/repository",
-            payload
-          );
+          const response = await axios.post(this.basePath + '/repository', payload);
           if (response.status < 300) {
             Swal.fire({
-              position: "center",
-              icon: "success",
-              title: "Repositorio criado com sucesso",
+              position: 'center',
+              icon: 'success',
+              title: 'Repositorio criado com sucesso',
               showConfirmButton: false,
               timer: 1500,
             });
@@ -147,27 +119,25 @@
               window.location.reload();
             }, 1500);
           } else {
-            alert("Falha");
+            alert('Falha');
           }
         }
         async handleSubmit() {
           const payload = {
-            usecase: $("#usecase").val(),
-            repositories: $("#select-repositories").val() || [],
-            usecaseModule: $("#select-dir").val(),
-            method: $("input[name=method-route]:checked")
-              .prop("id")
-              ?.replace("method-", ""),
-            path: $("#path").val(),
-            middleware: $("#select-middleware").val() || [],
+            usecase: $('#usecase').val(),
+            repositories: $('#select-repositories').val() || [],
+            usecaseModule: $('#select-dir').val(),
+            method: $('input[name=method-route]:checked').prop('id')?.replace('method-', ''),
+            path: $('#path').val(),
+            middleware: $('#select-middleware').val() || [],
           };
 
-          const response = await axios.post(this.basePath + "/", payload);
+          const response = await axios.post(this.basePath + '/', payload);
           if (response.status < 300) {
             Swal.fire({
-              position: "center",
-              icon: "success",
-              title: "Usecase criado com sucesso",
+              position: 'center',
+              icon: 'success',
+              title: 'Usecase criado com sucesso',
               showConfirmButton: false,
               timer: 1500,
             });
@@ -176,33 +146,32 @@
               window.location.reload();
             }, 1500);
           } else {
-            alert("Falha");
+            alert('Falha');
           }
         }
         async registerEvents() {
-          $("#select-dir").change((e) => {
+          $('#select-dir').change((e) => {
             const value = e.target.value;
 
             if (value) {
               for (const bind of this.bind) {
-                const equals =
-                  value.toLowerCase() === bind.basePath.replace("/", "");
+                const equals = value.toLowerCase() === bind.basePath.replace('/', '');
                 if (equals) {
-                  $("#default-middleware").val(bind.baseMiddleware.join(", "));
+                  $('#default-middleware').val(bind.baseMiddleware.join(', '));
                 }
               }
             }
           });
 
-          $("#submit").click(this.handleSubmit.bind(this));
-          $("#submit-repo").click(this.handleSubmitRepo.bind(this));
+          $('#submit').click(this.handleSubmit.bind(this));
+          $('#submit-repo').click(this.handleSubmitRepo.bind(this));
 
-          $("input[name=method-route]").change((e) => {
-            const method = $(e.target).prop("id")?.replace("method-", "");
+          $('input[name=method-route]').change((e) => {
+            const method = $(e.target).prop('id')?.replace('method-', '');
           });
         }
         async load() {
-          const { data } = await axios.get(this.basePath + "/");
+          const { data } = await axios.get(this.basePath + '/');
           await this.render.renderSelectRepositories(data.repositories);
           await this.render.renderDirectoryTree(data.modules);
           await this.render.renderSelectMiddleware(data.middlewares);
@@ -215,7 +184,7 @@
 
       class Render {
         async renderSelectRepositories(repositories) {
-          await $("#select-repositories-container").append(
+          await $('#select-repositories-container').append(
             `
             <select
               class="selectpicker form-control"
@@ -225,22 +194,16 @@
             >
               ${repositories
                 .sort()
-                .map(
-                  (repository) =>
-                    `<option value="${repository}">${repository.replace(
-                      "Repository",
-                      ""
-                    )}</option>`
-                )
-                .join("")}
+                .map((repository) => `<option value="${repository}">${repository.replace('Repository', '')}</option>`)
+                .join('')}
             </select>
-            `
+            `,
           );
 
-          $("#select-repositories").selectpicker();
+          $('#select-repositories').selectpicker();
         }
         async renderSelectMiddleware(middlewares) {
-          await $("#select-middleware-container").append(
+          await $('#select-middleware-container').append(
             `
             <select
               class="selectpicker form-control"
@@ -250,22 +213,17 @@
             >
               ${middlewares
                 .sort()
-                .map(
-                  (middleware) =>
-                    `<option value="${middleware}">${middleware}</option>`
-                )
-                .join("")}
+                .map((middleware) => `<option value="${middleware}">${middleware}</option>`)
+                .join('')}
             </select>
-            `
+            `,
           );
-          $("#select-middleware").selectpicker();
+          $('#select-middleware').selectpicker();
         }
 
         async renderDirectoryTree(dirs) {
-          await $("#select-dir").html("<option value=''></option>");
-          await $("#select-dir").append(
-            dirs.map((dir) => `<option value="${dir}">${dir}</option>`).join("")
-          );
+          await $('#select-dir').html("<option value=''></option>");
+          await $('#select-dir').append(dirs.map((dir) => `<option value="${dir}">${dir}</option>`).join(''));
         }
       }
 

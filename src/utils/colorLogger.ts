@@ -26,16 +26,18 @@ export function GenerateColorByHttpMethod(method: string) {
 }
 
 export function logger(props: Logger | Logger[]) {
-  let log =
-    props instanceof Array
-      ? props
-        .map((prop) =>
-          prop.message.length > 3 ? generate(prop.color, prop.message) : ""
-        )
-        .join("")
-      : props.message !== "{}"
-        ? generate(props.color, props.message)
-        : null;
+  const log = props instanceof Array
+    ? props
+      .map((prop) =>
+        prop.message.length > 3 ? generate(prop.color, prop.message) : ""
+      )
+      .join("")
+    : props.message !== "{}"
+      ? generate(props.color, props.message)
+      : null;
 
-  if (log) console.log(log);
+  if (log) {
+    // tslint:disable-next-line:no-console
+    console.log(log);
+  }
 }

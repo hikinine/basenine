@@ -7,9 +7,11 @@ export function interceptAndLogger(
   next: NextFunction
 ) {
 
-  var ip = request?.headers?.["x-forwarded-for"] || request?.connection?.remoteAddress;
+  const ip = request?.headers?.["x-forwarded-for"] || request?.connection?.remoteAddress;
   process.stdout.write("\u001b[2J\u001b[0;0H");
+  // tslint:disable-next-line:no-console
   console.error(" ")
+  // tslint:disable-next-line:no-console
   console.log("Request started at " + new Date().toISOString())
 
   const controllerName = request.route.stack[request.route.stack.length - 1].name
@@ -37,6 +39,7 @@ export function interceptAndLogger(
     }
 
   ])
+  // tslint:disable-next-line:no-console
   console.log("======================================================================>")
 
   next();
