@@ -147,7 +147,7 @@ export class ApplicationContainer {
       metadata.alias.forEach(eventAlias => alias.push(eventAlias))
       alias.push(metadata.eventName)
     }
-    
+
     this.bind({
       instance,
       key: instance.constructor.name,
@@ -157,10 +157,9 @@ export class ApplicationContainer {
 
   private installIntervals() {
     for (const interval of this.intervals) {
-      const { id, ms, request, runAtStart } = interval;
-      const $module = this.resolve(id);
-      setInterval($module.handle.bind($module, request), ms);
-      if (runAtStart) setTimeout($module.handle.bind($module, request), 0);
+      const $module = this.resolve(interval.id);
+      setInterval($module.handle.bind($module, interval.request), interval.ms);
+      if (interval.runAtStart) setTimeout($module.handle.bind($module, interval.request), 0);
     }
     return this;
   }
@@ -213,11 +212,15 @@ export class ApplicationContainer {
         endpoint: string
       }
     },
+
+    noIntervals?: boolean
   }) {
     this.applicationModules = props.applicationModules
     this.installApplicationModules();
-    this.installIntervals();
 
+    if (!props?.noIntervals) {
+      this.installIntervals();
+    }
     if (props?.server) {
       this.server = new ExpressHttpServer(props.server?.express)
       this.installRoutes();

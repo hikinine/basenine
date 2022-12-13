@@ -11,6 +11,14 @@
       <div class="row">
         <div class="col-6">
           <h1 class="text-center my-5">Criando novo usecase</h1>
+
+          <div class="mb-3">
+            <label class="mb-1">Contexto da aplicação</label>
+            <div class="d-flex justify-content-between" id="container-application-context"></div>
+          </div>
+
+          <script></script>
+
           <div class="mb-3">
             <label class="mb-1"> Nome do usecase </label>
             <input id="usecase" class="form-control" placeholder="Exemplo: UserRecoveryPassword" />
@@ -128,6 +136,7 @@
             repositories: $('#select-repositories').val() || [],
             usecaseModule: $('#select-dir').val(),
             method: $('input[name=method-route]:checked').prop('id')?.replace('method-', ''),
+            context: $('input[name=contexts]:checked').prop('id'),
             path: $('#path').val(),
             middleware: $('#select-middleware').val() || [],
           };
@@ -172,6 +181,7 @@
         }
         async load() {
           const { data } = await axios.get(this.basePath + '/');
+          await this.render.renderApplicationContexts(data.contexts);
           await this.render.renderSelectRepositories(data.repositories);
           await this.render.renderDirectoryTree(data.modules);
           await this.render.renderSelectMiddleware(data.middlewares);
@@ -183,6 +193,19 @@
       }
 
       class Render {
+        async renderApplicationContexts(contexts) {
+          console.log(contexts)
+          const html = contexts.map(
+            (context) =>
+              `
+              <div>
+                <input type="radio" name="contexts" id="${context}" />
+                <label for="${context}">${context}</label>
+              </div>
+              `,
+          ).join("")
+          $('#container-application-context').html(html);
+        }
         async renderSelectRepositories(repositories) {
           await $('#select-repositories-container').append(
             `

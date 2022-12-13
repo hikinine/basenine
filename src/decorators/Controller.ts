@@ -27,21 +27,22 @@ type RequireOnlyOne<T, Keys extends keyof T = keyof T> = Pick<T, Exclude<keyof T
 
 type http = RequireOnlyOne<HttpMethods>;
 
+function handleErrorResponse(response: Response, result: any) {
+  if (result instanceof HttpException) {
+    response.status(result?.code || 400).json(result);
+  } else if (result instanceof Error) {
+    response.status(500).json(result?.message);
+  } else {
+    response.status(500).json(result?.message);
+  }
+}
+
 export function Controller(props: {
   middlewares?: any[];
   role?: number;
   headers?: { [key: string]: string };
   endpoint: http;
 }) {
-  function handleErrorResponse(response: Response, result: any) {
-    if (result instanceof HttpException) {
-      response.status(result?.code || 400).json(result);
-    } else if (result instanceof Error) {
-      response.status(500).json(result?.message);
-    } else {
-      response.status(500).json(result?.message);
-    }
-  }
 
   let statusCode = 200;
   let method = '';
@@ -79,21 +80,26 @@ export function Controller(props: {
       constructor,
     );
 
+
     const originalMethod = constructor.prototype.handle;
     constructor.prototype.statusCode = statusCode;
     constructor.prototype.authorization = { level: props?.role || 0 };
     constructor.prototype.handle = async function (request: Request, response: Response) {
       try {
         if (props.role) {
-          if (this.authorization.level > 0 && request.body?.me?.privilege < this.authorization.level) {
+          if (this.authorization?.level > 0 && request?.body?.me?.privilege < this.authorization.level) {
             throw new AuthorizationException(
               'Você não tem permissão para acessar esse fluxo. Level necessário: ' + this.authorization.level + '.',
             );
           }
         }
 
-        const result = await originalMethod.apply(this, [request, response]);
-        return response.status(this?.statusCode || 200).json(result);
+        const controllerResponse = await originalMethod.apply(this, [request, response]);
+
+        if (!response?.status)
+          return controllerResponse;
+
+        return response.status(this?.statusCode || 200).json(controllerResponse);
       } catch (error) {
         return handleErrorResponse.call(this, response, error);
       }
