@@ -9,7 +9,6 @@ import { InternalError } from './errors/InternalError';
 import { ApplicationContainerModules, Dependencies, Route } from './interface/container';
 import { ExpressHttpServer, InstallExpressOptions } from './server.express';
 import { bind } from './utils/bind';
-import { interceptAndLogger } from './utils/intercept';
 
 export class ApplicationContainer {
 
@@ -156,10 +155,18 @@ export class ApplicationContainer {
   }
 
   private installIntervals() {
+    async function assign(handler: any) {
+      try {
+        await handler()
+      } catch (error) {
+        return
+      }
+    }
     for (const interval of this.intervals) {
       const $module = this.resolve(interval.id);
-      setInterval($module.handle.bind($module, interval.request), interval.ms);
-      if (interval.runAtStart) setTimeout($module.handle.bind($module, interval.request), 0);
+      const boundedHandler = $module.handle.bind($module, interval.request)
+      setInterval(async () => await assign(boundedHandler), interval.ms);
+      if (interval.runAtStart) setTimeout(async () => await assign(boundedHandler), 0);
     }
     return this;
   }
@@ -207,6 +214,7 @@ export class ApplicationContainer {
     applicationModules: any[],
     server?: {
       express: InstallExpressOptions,
+      defaultMiddleware?: Array<any>
       developerCli?: {
         active: boolean,
         endpoint: string
@@ -227,8 +235,11 @@ export class ApplicationContainer {
     }
 
     if (props?.server?.developerCli?.active) {
-      this.defaultMiddleware.push(interceptAndLogger)
       this.installDeveloperRoutes(props.server.developerCli.endpoint);
+    }
+    if (typeof props?.server?.defaultMiddleware === "object") {
+      const { defaultMiddleware } = props.server
+      this.defaultMiddleware = defaultMiddleware
     }
 
     this.free();

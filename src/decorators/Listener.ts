@@ -7,7 +7,7 @@ export type ListenerMetadata = {
   eventName: string;
   alias: string[]
 };
-export function JobListener<T, K>(props: { eventName: T; options?: K }) {
+export function JobListener<T, K>(props: { eventName: T extends { name: string } ? T["name"] : string; options?: K }) {
   return (constructor: Constructor) => {
     Reflect.defineMetadata(
       MetadataKeys.Events,
