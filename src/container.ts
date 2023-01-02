@@ -59,8 +59,16 @@ export class ApplicationContainer {
         }
 
         const metadataKeys = Reflect.getMetadataKeys($controller);
-        if (metadataKeys.length && metadataKeys.some((key) => this.allowedControllerKeys.includes(key))) {
+        const hasControllerMetadata = metadataKeys.length && metadataKeys.some((key) => this.allowedControllerKeys.includes(key))
+        if (hasControllerMetadata) {
           this.installController($controller, $service, metadataKeys);
+        }
+
+        if (serviceMetadata && hasControllerMetadata) {
+          if (!this.counter.hasOwnProperty(metadata.id)) {
+            this.counter[metadata.id] = 0
+          }
+          this.counter[metadata.id]++
         }
       });
     }
@@ -247,6 +255,7 @@ export class ApplicationContainer {
 
 
   private applicationModules: any[]
+  private counter = {} as { [key: string]: number }
   private defaultMiddleware = []
   private server: ExpressHttpServer
   private modules = new Map<string, { instance: ApplicationContainerModules; alias?: string[] }>();

@@ -2,15 +2,23 @@ import 'reflect-metadata';
 import { MetadataKeys } from '../constants/metadata.keys';
 import { Constructor, IController, IService } from './../interface/container';
 
-export type ModuleMetadata = {
+export type ModuleMetadataProps = {
   providers: any[];
   exports: [
      IController,
      IService
   ][];
 };
-export function Module(props: ModuleMetadata) {
-  return (target: Constructor) => {
-    Reflect.defineMetadata(MetadataKeys.Modules, props, target);
+export type ModuleMetadata = ModuleMetadataProps & { id: string }
+export function Module(props: ModuleMetadataProps) {
+  return (constructor: Constructor) => {
+    Reflect.defineMetadata(
+      MetadataKeys.Modules, 
+      {
+        id: constructor.name,
+        ...props
+      }, 
+      constructor
+      );
   };
 }
