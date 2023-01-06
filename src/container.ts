@@ -1,4 +1,5 @@
 
+import "reflect-metadata";
 import { MetadataKeys } from './constants/metadata.keys';
 import { IntervalMetadata } from './decorators/Interval';
 import { ListenerMetadata } from './decorators/Listener';
@@ -53,23 +54,35 @@ export class ApplicationContainer {
 
       metadata.exports.forEach(([$controller, $service]) => {
 
-        const serviceMetadata: ProviderMetadata = Reflect.getMetadata(MetadataKeys.Provider, $service);
-        if (serviceMetadata) {
-          this.installService($service, serviceMetadata, metadata.providers);
-        }
-
-        const metadataKeys = Reflect.getMetadataKeys($controller);
-        const hasControllerMetadata = metadataKeys.length && metadataKeys.some((key) => this.allowedControllerKeys.includes(key))
-        if (hasControllerMetadata) {
-          this.installController($controller, $service, metadataKeys);
-        }
-
-        if (serviceMetadata && hasControllerMetadata) {
-          if (!this.counter.hasOwnProperty(metadata.id)) {
-            this.counter[metadata.id] = 0
+        try {
+          const serviceMetadata: ProviderMetadata = Reflect.getMetadata(MetadataKeys.Provider, $service);
+          if (serviceMetadata) {
+            this.installService($service, serviceMetadata, metadata.providers);
           }
-          this.counter[metadata.id]++
+
+          const metadataKeys = Reflect.getMetadataKeys($controller);
+          const hasControllerMetadata = metadataKeys.length && metadataKeys.some((key) => this.allowedControllerKeys.includes(key))
+          if (hasControllerMetadata) {
+            this.installController($controller, $service, metadataKeys);
+          }
+
+          if (serviceMetadata && hasControllerMetadata) {
+            if (!this.counter.hasOwnProperty(metadata.id)) {
+              this.counter[metadata.id] = 0
+            }
+            this.counter[metadata.id]++
+          }
+        } catch (error: any) {
+          this.failed.push({
+            error,
+            message: error?.message,
+            $service,
+            $controller,
+            $module,
+            metadata
+          })
         }
+
       });
     }
     return this;
@@ -81,7 +94,7 @@ export class ApplicationContainer {
     this.bind({
       instance,
       key: metadata.id,
-      alias: [metadata.interface, metadata.shortId],
+      alias: [metadata.interface, metadata.shortId, metadata.alias],
     });
   }
 
@@ -222,7 +235,7 @@ export class ApplicationContainer {
     applicationModules: any[],
     server?: {
       express: InstallExpressOptions,
-      defaultMiddleware?: Array<any>
+      defaultMiddleware?: any[]
       developerCli?: {
         active: boolean,
         endpoint: string
@@ -233,6 +246,11 @@ export class ApplicationContainer {
   }) {
     this.applicationModules = props.applicationModules
     this.installApplicationModules();
+
+    if (typeof props?.server?.defaultMiddleware === "object") {
+      const { defaultMiddleware } = props.server
+      this.defaultMiddleware = defaultMiddleware
+    }
 
     if (!props?.noIntervals) {
       this.installIntervals();
@@ -245,15 +263,13 @@ export class ApplicationContainer {
     if (props?.server?.developerCli?.active) {
       this.installDeveloperRoutes(props.server.developerCli.endpoint);
     }
-    if (typeof props?.server?.defaultMiddleware === "object") {
-      const { defaultMiddleware } = props.server
-      this.defaultMiddleware = defaultMiddleware
-    }
+
 
     this.free();
   }
 
 
+   failed = []
   private applicationModules: any[]
   private counter = {} as { [key: string]: number }
   private defaultMiddleware = []

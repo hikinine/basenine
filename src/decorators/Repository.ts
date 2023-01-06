@@ -5,6 +5,7 @@ export type RepositoryMetadata = {
   id: string;
   interface: string;
   shortId: string;
+  alias: string
   contextPrisma?: boolean;
 };
 
@@ -24,6 +25,7 @@ export function Repository(props: { contextPrisma?: boolean; interface: string }
         id: constructor.name,
         interface: props.interface,
         shortId: formatRepository(props.interface.replace('Repository', '')),
+        alias: props.interface?.replace("Repository", "").toLowerCase(),
         contextPrisma: props?.contextPrisma,
       },
       constructor,
