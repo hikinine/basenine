@@ -1,3 +1,4 @@
+export * from "./Catch"
 export * from "./Controller"
 export * from "./Documentation"
 export * from "./Interval"

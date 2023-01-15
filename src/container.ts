@@ -7,7 +7,7 @@ import { ModuleMetadata } from './decorators/Module';
 import { ProviderMetadata } from './decorators/Provider';
 import { RepositoryMetadata } from './decorators/Repository';
 import { InternalError } from './errors/InternalError';
-import { ApplicationContainerModules, Dependencies, Route } from './interface/container';
+import { ApplicationContainerModules, Dependencies, Route, UseExpress } from './interface/container';
 import { ExpressHttpServer, InstallExpressOptions } from './server.express';
 import { bind } from './utils/bind';
 
@@ -35,6 +35,25 @@ export class ApplicationContainer {
     return this;
   }
   private installApplicationModules() {
+
+    // Default catcher
+    for (const $module of this.applicationModules) {
+      const metadata: ModuleMetadata = Reflect.getMetadata(MetadataKeys.Modules, $module);
+      if (!metadata) return;
+
+      if (metadata.catcher) {
+        metadata.exports.forEach(([$controller]) => {
+          Reflect.defineMetadata(
+            MetadataKeys.Catch,
+            {
+              id: $controller.name,
+              exceptionHandler: metadata.catcher
+            },
+            $controller
+          )
+        })
+      }
+    }
     /**
      * ORDER:
      * First you should resolve every repository
@@ -192,7 +211,7 @@ export class ApplicationContainer {
     return this;
   }
 
-  private installRoutes() {
+  private installRoutes(useExpress?: UseExpress) {
     const sortRoutes = (route: Route) => (route.path.includes(':') ? 1 : -1);
     this.routes.sort(sortRoutes);
     for (const route of this.routes) {
@@ -210,6 +229,13 @@ export class ApplicationContainer {
     }
 
     this.server.app.use('/v1', this.server.route);
+
+    if (typeof useExpress === "object") {
+      for (const use of useExpress) {
+        const middlewares = use.middlewares || [];
+        this.server.app.use(use.path, ...middlewares, use.controller)
+      }
+    }
 
     return this;
   }
@@ -234,12 +260,13 @@ export class ApplicationContainer {
   constructor(props: {
     applicationModules: any[],
     server?: {
-      express: InstallExpressOptions,
+      options?: InstallExpressOptions,
       defaultMiddleware?: any[]
       developerCli?: {
         active: boolean,
         endpoint: string
       }
+      useExpress?: UseExpress
     },
 
     noIntervals?: boolean
@@ -256,8 +283,8 @@ export class ApplicationContainer {
       this.installIntervals();
     }
     if (props?.server) {
-      this.server = new ExpressHttpServer(props.server?.express)
-      this.installRoutes();
+      this.server = new ExpressHttpServer(props.server?.options)
+      this.installRoutes(props?.server?.useExpress);
     }
 
     if (props?.server?.developerCli?.active) {
@@ -269,7 +296,7 @@ export class ApplicationContainer {
   }
 
 
-   failed = []
+  failed = []
   private applicationModules: any[]
   private counter = {} as { [key: string]: number }
   private defaultMiddleware = []

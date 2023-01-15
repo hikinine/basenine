@@ -1,8 +1,10 @@
 import 'reflect-metadata';
 import { MetadataKeys } from '../constants/metadata.keys';
 import { Constructor, IController, IService } from './../interface/container';
+import { CatcherHandler } from './Catch';
 
 export type ModuleMetadataProps = {
+  catcher?: CatcherHandler,
   providers: any[];
   exports: [
      IController,

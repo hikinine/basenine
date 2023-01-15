@@ -4,6 +4,7 @@ import { HttpException } from '../abstract/Exception';
 import { MetadataKeys } from '../constants/metadata.keys';
 import { AuthorizationException } from '../errors';
 import { Constructor } from '../interface/container';
+import { CatchMetadata } from './Catch';
 
 type Pathname = `/${string}`;
 
@@ -11,7 +12,7 @@ export type ControllerMetadata = {
   id: string;
   role: number;
   middlewares?: any[];
-
+  errors: any[]
   method: 'post' | 'put' | 'get' | 'delete' | 'patch';
   path: Pathname;
   statusCode: number;
@@ -31,9 +32,15 @@ function handleErrorResponse(response: Response, result: any) {
   if (result instanceof HttpException) {
     response.status(result?.code || 400).json(result);
   } else if (result instanceof Error) {
-    response.status(500).json(result?.message);
+    response.status(500).json({
+      message: result?.message,
+      error: result
+    });
   } else {
-    response.status(500).json(result?.message);
+    response.status(500).json({
+      message: result?.message,
+      error: result
+    });
   }
 }
 
@@ -43,7 +50,7 @@ export function Controller(props: {
   headers?: { [key: string]: string };
   endpoint: http;
 }) {
-
+  const errors = []
   let statusCode = 200;
   let method = '';
   if (typeof props.endpoint.Get === 'string') {
@@ -75,11 +82,16 @@ export function Controller(props: {
         middlewares: props?.middlewares || [],
         statusCode,
         method,
+        errors,
         path: Object.values(props.endpoint)[0],
       },
       constructor,
     );
 
+    const catchMetadata: CatchMetadata = Reflect.getMetadata(MetadataKeys.Catch, constructor);
+    constructor.prototype.customExceptionHandler = catchMetadata
+      ? catchMetadata.exceptionHandler
+      : null;
 
     const originalMethod = constructor.prototype.handle;
     constructor.prototype.statusCode = statusCode;
@@ -99,10 +111,25 @@ export function Controller(props: {
         if (!response?.status)
           return controllerResponse;
 
+        if (response.headersSent) { return }
+
         return response.status(this?.statusCode || 200).json(controllerResponse);
-      } catch (error) {
-        return handleErrorResponse.call(this, response, error);
+      } catch (error: any) {
+
+        if (!constructor.prototype.customExceptionHandler) {
+          // try one more time, since order of declaration of decorators matters,
+          // ensure that if order is declared wrong, give one more try to find catchmetadata
+          const hasMetadata: CatchMetadata = Reflect.getMetadata(MetadataKeys.Catch, constructor);
+
+          constructor.prototype.customExceptionHandler = hasMetadata
+            ? hasMetadata.exceptionHandler
+            : "some-not-defined-value";
+        }
+
+        return typeof constructor.prototype.customExceptionHandler === "function"
+          ? await constructor.prototype.customExceptionHandler(request, response, error)
+          : handleErrorResponse.call(this, response, error)
       }
-    };
+    }
   };
-}
+};

@@ -16,3 +16,9 @@ export type Listeners = { eventName: string; id: string };
 export type ApplicationContainerModules = any
 
 export type Constructor = new (...args: any[]) => {}
+
+export type UseExpress = {
+  path: string,
+  controller: any,
+  middlewares?: any[]
+}[]
