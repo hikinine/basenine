@@ -5,7 +5,8 @@ import { Constructor } from '../interface/container';
 export type ListenerMetadata = {
   id: string;
   eventName: string;
-  alias: string[]
+  alias: string[];
+  options: any
 };
 export function JobListener<T, K>(props: { eventName: T extends { name: string } ? T["name"] : string; options?: K }) {
   return (constructor: Constructor) => {
@@ -17,7 +18,8 @@ export function JobListener<T, K>(props: { eventName: T extends { name: string }
         alias: [
           props.eventName + "Controller",
           props.eventName + "Service",
-        ]
+        ],
+        options: props.options
       },
       constructor,
     );
