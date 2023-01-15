@@ -7,7 +7,7 @@ import { ModuleMetadata } from './decorators/Module';
 import { ProviderMetadata } from './decorators/Provider';
 import { RepositoryMetadata } from './decorators/Repository';
 import { InternalError } from './errors/InternalError';
-import { ApplicationContainerModules, Dependencies, Route, UseExpress } from './interface/container';
+import { ApplicationContainerModules, Dependencies, Route } from './interface/container';
 import { ExpressHttpServer, InstallExpressOptions } from './server.express';
 import { bind } from './utils/bind';
 
@@ -211,7 +211,7 @@ export class ApplicationContainer {
     return this;
   }
 
-  private installRoutes(useExpress?: UseExpress) {
+  private installRoutes() {
     const sortRoutes = (route: Route) => (route.path.includes(':') ? 1 : -1);
     this.routes.sort(sortRoutes);
     for (const route of this.routes) {
@@ -230,13 +230,6 @@ export class ApplicationContainer {
 
     this.server.app.use('/v1', this.server.route);
 
-    if (typeof useExpress === "object") {
-      for (const use of useExpress) {
-        const middlewares = use.middlewares || [];
-        this.server.app.use(use.path, ...middlewares, use.controller)
-      }
-    }
-
     return this;
   }
   private installDeveloperRoutes(endpoint?: string) {
@@ -247,6 +240,11 @@ export class ApplicationContainer {
     )
   }
 
+  public use(path: string, controller: any, middlewares?: any[]) {
+    const middleware = middlewares || [];
+    this.server.app.use(path, ...middleware, controller)
+  };
+  
   private free() {
     delete this?.applicationModules;
     delete this?.routes;
@@ -266,7 +264,6 @@ export class ApplicationContainer {
         active: boolean,
         endpoint: string
       }
-      useExpress?: UseExpress
     },
 
     noIntervals?: boolean
@@ -284,7 +281,7 @@ export class ApplicationContainer {
     }
     if (props?.server) {
       this.server = new ExpressHttpServer(props.server?.options)
-      this.installRoutes(props?.server?.useExpress);
+      this.installRoutes();
     }
 
     if (props?.server?.developerCli?.active) {
