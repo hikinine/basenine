@@ -25,6 +25,7 @@ export function JobListener<T, K>(props: { eventName: T extends { name: string }
     );
 
     const originalMethod = constructor.prototype.handle;
+    Object.assign(constructor, { listernerOptions: props.options });
     constructor.prototype.handle = async function (...args: any[]) {
       const [$, done] = args
       try {

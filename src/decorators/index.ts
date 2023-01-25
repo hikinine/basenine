@@ -6,4 +6,5 @@ export * from "./Listener"
 export * from "./Module"
 export * from "./Provider"
 export * from "./Repository"
+export * from "./Socket"
 

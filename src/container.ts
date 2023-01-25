@@ -1,3 +1,4 @@
+import { SocketMetadata } from './decorators/Socket';
 
 import "reflect-metadata";
 import { MetadataKeys } from './constants/metadata.keys';
@@ -181,6 +182,10 @@ export class ApplicationContainer {
       const metadata = Reflect.getMetadata(MetadataKeys.Interval, controller);
       this.intervals.push(metadata);
     }
+    if (metadataKeys.includes(MetadataKeys.Socket)) {
+      const metadata = Reflect.getMetadata(MetadataKeys.Socket, controller)
+      this.socketListener.push(metadata)
+    }
     if (metadataKeys.includes(MetadataKeys.Events)) {
       const metadata: ListenerMetadata = Reflect.getMetadata(MetadataKeys.Events, controller);
       metadata.alias.forEach(eventAlias => alias.push(eventAlias))
@@ -193,7 +198,26 @@ export class ApplicationContainer {
       alias,
     });
   }
-
+  private installSockets() {
+    async function assign(handler: any) {
+      try {
+        await handler()
+      } catch (error) {
+        return
+      }
+    }
+    this.failed.push({ instalei: true })
+    this.failed.push(this.server.socket)
+    this.server.socket.io.on("connection", client => {
+      this.failed.push({ registrei: true })
+      for (const socketEvent of this.socketListener) {
+        this.failed.push(socketEvent)
+        const $module = this.resolve(socketEvent.id);
+        const boundedHandler = $module.handle.bind($module, client)
+        client.on(socketEvent.on, async () => await assign(boundedHandler))
+      }
+    })
+  }
   private installIntervals() {
     async function assign(handler: any) {
       try {
@@ -244,7 +268,7 @@ export class ApplicationContainer {
     const middleware = middlewares || [];
     this.server.app.use(path, ...middleware, controller)
   };
-  
+
   private free() {
     delete this?.applicationModules;
     delete this?.routes;
@@ -258,6 +282,7 @@ export class ApplicationContainer {
   constructor(props: {
     applicationModules: any[],
     server?: {
+      socket?: boolean
       options?: InstallExpressOptions,
       defaultMiddleware?: any[]
       developerCli?: {
@@ -280,7 +305,11 @@ export class ApplicationContainer {
       this.installIntervals();
     }
     if (props?.server) {
-      this.server = new ExpressHttpServer(props.server?.options)
+
+      this.server = new ExpressHttpServer(props.server?.options, props.server.socket)
+      if (props.server.socket) {
+        this.installSockets()
+      }
       this.installRoutes();
     }
 
@@ -301,10 +330,12 @@ export class ApplicationContainer {
   private modules = new Map<string, { instance: ApplicationContainerModules; alias?: string[] }>();
   private routes = [] as Route[];
   private intervals = [] as IntervalMetadata[];
+  private socketListener = [] as SocketMetadata[]
   private allowedControllerKeys = [
     MetadataKeys.Controller,
     MetadataKeys.HttpRoute,
     MetadataKeys.Interval,
     MetadataKeys.Events,
+    MetadataKeys.Socket
   ];
 }

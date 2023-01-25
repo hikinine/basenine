@@ -7,5 +7,6 @@ export const MetadataKeys = {
   HttpRoute: 'ioc:http-route',
   Interval: 'ioc:intervals',
   Documentation: 'ioc:documentation',
-  Catch: "ioc:catch"
+  Catch: "ioc:catch",
+  Socket: "ioc:socket"
 };

@@ -48,7 +48,7 @@ export function Controller(props: {
   middlewares?: any[];
   role?: number;
   headers?: { [key: string]: string };
-  endpoint: http;
+  endpoint?: http;
 }) {
   const errors = []
   let statusCode = 200;

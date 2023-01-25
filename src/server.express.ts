@@ -1,6 +1,9 @@
 import cors from 'cors';
 import express, { Express, Router } from 'express';
+import http from "http";
 import { join } from "path";
+import { Server } from 'socket.io';
+import { SocketServer } from './server.socket';
 export interface InstallExpressOptions {
   jsonLimit?: string;
   urlencoded?: boolean;
@@ -13,9 +16,22 @@ export interface InstallExpressOptions {
 class ExpressHttpServer {
   public app: Express;
   public route: Router;
+  public socket?: SocketServer
 
-  constructor(options?: InstallExpressOptions) {
+  constructor(options?: InstallExpressOptions, installSocket?: boolean) {
     const app = express();
+
+    const server = http.createServer(app)
+
+    if (installSocket) {
+      const io = new Server(server, {
+        cors: {
+          origin: "*",
+        }
+      });
+      this.socket = new SocketServer(io)
+    }
+
 
     app.set('views', join(__dirname, '../views'))
     app.set('view engine', 'ejs');
@@ -27,9 +43,9 @@ class ExpressHttpServer {
       app.use(cors());
     }
 
-    app.listen(options?.port || 3000, options?.onReady);
+    server.listen(options?.port || 3000, options?.onReady);
 
-    const route = Router({ mergeParams: typeof options.mergeParams === "boolean" ? options.mergeParams :  true });
+    const route = Router({ mergeParams: typeof options.mergeParams === "boolean" ? options.mergeParams : true });
     this.app = app;
     this.route = route;
   }
