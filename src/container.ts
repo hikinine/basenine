@@ -206,15 +206,18 @@ export class ApplicationContainer {
         return
       }
     }
-    this.failed.push({ instalei: true })
-    this.failed.push(this.server.socket)
     this.server.socket.io.on("connection", client => {
-      this.failed.push({ registrei: true })
       for (const socketEvent of this.socketListener) {
-        this.failed.push(socketEvent)
         const $module = this.resolve(socketEvent.id);
-        const boundedHandler = $module.handle.bind($module, client)
-        client.on(socketEvent.on, async () => await assign(boundedHandler))
+
+        client.on(socketEvent.on, async args => {
+          try {
+            const { event, payload } = await $module.handle.apply($module, [args, client])
+            client.emit(event, payload)
+          } catch (error) {
+            client?.emit?.("error", error)
+          }
+        })
       }
     })
   }

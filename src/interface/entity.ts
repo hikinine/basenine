@@ -15,3 +15,8 @@ export  type Optional<Options> = Options & { defaultValue: any }
 export type EntityLayer<Props> = Props & {
 
 }
+
+export type SocketEventResponse = {
+  event: string 
+  payload: any
+}

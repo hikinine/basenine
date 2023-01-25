@@ -21,15 +21,5 @@ export function Socket(props: {
       constructor,
     );
 
-    const originalMethod = constructor.prototype.handle;
-    
-    constructor.prototype.handle = async function (socket: any) {
-      try {
-        const { event, payload } = await originalMethod.apply(this, [socket]);
-        socket.emit(event, payload)
-      } catch (error) {
-        socket?.emit?.("error", error)
-      }
-    };
   };
 }
