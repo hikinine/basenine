@@ -272,6 +272,10 @@ export class ApplicationContainer {
     this.server.app.use(path, ...middleware, controller)
   };
 
+  public useExpress(expression: any) {
+    this.server.app.use(expression)
+  }
+
   private free() {
     delete this?.applicationModules;
     delete this?.routes;
