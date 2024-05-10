@@ -10,6 +10,7 @@ export interface InstallExpressOptions {
   disableCors?: boolean;
   port?: number;
   mergeParams?: boolean
+  corsOptions?: cors.CorsOptions | cors.CorsOptionsDelegate<cors.CorsRequest>;
   onReady?: () => void;
 }
 
@@ -40,7 +41,7 @@ class ExpressHttpServer {
     app.use(express.urlencoded({ extended: options?.urlencoded || true }));
 
     if (!options?.disableCors) {
-      app.use(cors());
+      app.use(cors(options.corsOptions));
     }
 
     server.listen(options?.port || 3000, options?.onReady);
@@ -52,3 +53,4 @@ class ExpressHttpServer {
 }
 
 export { ExpressHttpServer };
+
